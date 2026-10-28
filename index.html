@@ -61,9 +61,62 @@
       font-size: 14px;
     }
 
+    /* 입력 영역도 재료 카드와 같은 모양이어야 화면이 한 덩어리로 보인다. */
+    .add-card {
+      background-color: var(--card);
+      border-radius: var(--card-radius);
+      box-shadow: var(--card-shadow);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .add-card h2 {
+      margin-top: 0;
+    }
+
+    #add-form input,
+    #add-form select {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px;
+      font: inherit;
+      color: var(--text);
+    }
+
+    /* 기본 파란 외곽선 대신 테두리 색을 바꿔, 지금 입력 중인 칸을 파스텔톤으로 알려 준다. */
+    #add-form input:focus,
+    #add-form select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    /* 가로 전체 너비로 두면 flex 줄바꿈 때문에 버튼이 항상 맨 아래 한 줄을 차지한다. */
+    #add-form button[type="submit"] {
+      width: 100%;
+      background-color: var(--primary);
+      color: var(--text);
+      border: none;
+      border-radius: 12px;
+      padding: 10px;
+      font: inherit;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    /* 안내 문구는 경고처럼 무섭지 않게, 작고 부드러운 색으로 보여 준다. */
     #form-message {
-      color: #c00;
+      color: var(--danger);
+      font-size: 13px;
       min-height: 1.2em;
+      margin: 8px 0 0;
+    }
+
+    /* 좁은 휴대폰 화면에서는 칸이 옆으로 끼이지 않도록 한 줄에 하나씩 쌓는다. */
+    @media (max-width: 480px) {
+      #add-form {
+        flex-direction: column;
+        align-items: stretch;
+      }
     }
 
     /* 테두리 대신 옅은 그림자로 카드를 배경에서 살짝 띄운다. */
@@ -91,7 +144,7 @@
     <p>냉장고에 있는 재료를 기록하고 유통기한을 챙겨요.</p>
   </header>
 
-  <section>
+  <section class="add-card">
     <h2>재료 추가</h2>
     <form id="add-form">
       <label>
