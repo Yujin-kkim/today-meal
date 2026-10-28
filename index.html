@@ -19,6 +19,10 @@
       --room: #FFE5A5;         /* 실온 */
       --warn: #FFB4A2;         /* 유통기한 임박 */
       --danger: #E5989B;       /* 기한 지남 */
+
+      /* 카드 모양도 변수로 두어, 입력 영역 등 다른 카드가 같은 모양을 쓰게 한다. */
+      --card-radius: 16px;
+      --card-shadow: 0 2px 8px rgba(74, 64, 54, 0.08);
     }
 
     /* 웹폰트를 불러오지 않기로 했으므로, 설치된 폰트 중 앞에서부터 있는 것을 쓴다. */
@@ -62,8 +66,11 @@
       min-height: 1.2em;
     }
 
+    /* 테두리 대신 옅은 그림자로 카드를 배경에서 살짝 띄운다. */
     .item-card {
-      border: 1px solid #999;
+      background-color: var(--card);
+      border-radius: var(--card-radius);
+      box-shadow: var(--card-shadow);
       padding: 12px;
       margin-bottom: 8px;
     }
