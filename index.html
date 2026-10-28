@@ -33,19 +33,67 @@
       max-width: 640px;
       margin: 0 auto;
       padding: 16px;
+      /* 화면 맨 위에 제목이 붙어 답답해 보이지 않도록 위쪽만 더 띄운다. */
+      padding-top: 32px;
     }
 
     /* 앱 이름이 가장 먼저 눈에 들어오도록 크고 굵게 둔다. */
     header h1 {
       font-size: 32px;
       font-weight: 800;
-      margin: 8px 0 4px;
+      /* 위쪽 여백은 body의 32px만 쓰도록 h1 기본 여백을 없앤다. */
+      margin: 0 0 6px;
     }
 
     /* 설명은 제목보다 덜 눈에 띄도록 보조 글자색을 쓴다. */
     header p {
       color: var(--text-soft);
       margin: 0 0 16px;
+    }
+
+    /* 냉장고 상태를 숫자로 한눈에 보도록, 다른 카드와 같은 모양에 3칸으로 나눈다. */
+    .summary-card {
+      display: flex;
+      background-color: var(--card);
+      border-radius: var(--card-radius);
+      box-shadow: var(--card-shadow);
+      padding: 14px 0;
+      margin-bottom: 16px;
+    }
+
+    .summary-cell {
+      flex: 1;
+      text-align: center;
+    }
+
+    /* 칸 사이에 얇은 선을 두어 세 숫자가 서로 섞여 보이지 않게 한다. */
+    .summary-cell + .summary-cell {
+      border-left: 1px solid var(--line);
+    }
+
+    .summary-number {
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .summary-label {
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    /* 챙겨야 할 숫자는 색으로 구분해, 0이 아닐 때 바로 눈에 띄게 한다. */
+    #soon-count {
+      color: var(--primary-dark);
+    }
+
+    #expired-count {
+      color: var(--danger);
+    }
+
+    /* 빈 냉장고일 때도 화면이 허전하지 않도록 큰 아이콘을 둔다. */
+    .empty-icon {
+      font-size: 44px;
+      margin-bottom: 10px;
     }
 
     #add-form {
@@ -124,17 +172,119 @@
       background-color: var(--card);
       border-radius: var(--card-radius);
       box-shadow: var(--card-shadow);
-      padding: 12px;
-      margin-bottom: 8px;
+      padding: 14px 16px;
+      /* 왼쪽은 색 띠(20px) 바로 다음부터 16px 여백이 되도록 띠 너비를 더한다. */
+      padding-left: 36px;
+      margin-bottom: 10px;
+      /* 윗줄과 아랫줄 사이 간격을 margin 대신 gap 하나로 관리한다. */
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      /* 색 띠의 기준점을 카드로 잡기 위해 relative를 준다. */
+      position: relative;
+      /* 색 띠를 카드의 둥근 모서리 모양대로 잘라 내기 위해 넘치는 부분을 숨긴다. */
+      overflow: hidden;
     }
 
+    /* 보관 위치를 글자를 읽지 않고도 색으로 알아볼 수 있게 왼쪽에 세로 띠를 둔다. */
+    .item-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 20px;
+    }
+
+    .item-card[data-location="냉장"]::before {
+      background-color: var(--chill);
+    }
+
+    .item-card[data-location="냉동"]::before {
+      background-color: var(--freeze);
+    }
+
+    .item-card[data-location="실온"]::before {
+      background-color: var(--room);
+    }
+
+    /* 한 줄 안에서 왼쪽 묶음과 오른쪽 묶음을 양 끝으로 벌린다. */
+    .card-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 칩과 배지처럼 나란히 붙어 있어야 하는 것들을 한 묶음으로 둔다. */
+    .card-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* 재료 이름이 카드에서 가장 먼저 읽히도록 가장 크고 굵게 둔다. */
     .item-name {
-      font-weight: bold;
-      margin: 0 0 4px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0;
     }
 
-    .item-detail {
-      margin: 0 0 8px;
+    .item-quantity {
+      font-size: 14px;
+      color: var(--text-soft);
+    }
+
+    /* 보관 위치는 왼쪽 색 띠로도 보이므로, 칩은 배지보다 작고 연하게 둔다. */
+    .location-chip {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      background-color: var(--line);
+      color: var(--text-soft);
+    }
+
+    /* 유통기한은 가장 중요한 정보라 알약 모양 배지로 따로 눈에 띄게 한다. */
+    .expiry-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background-color: var(--line);
+      color: var(--text-soft);
+    }
+
+    .expiry-badge.expired {
+      background-color: var(--danger);
+      color: #FFFFFF;
+    }
+
+    .expiry-badge.soon {
+      background-color: var(--warn);
+      color: var(--text);
+    }
+
+    /* 수정/삭제는 자주 누르지 않는 보조 동작이라 글자만 있는 가벼운 버튼으로 둔다. */
+    .text-button {
+      background: none;
+      border: none;
+      padding: 4px 8px;
+      font-size: 13px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-soft);
+    }
+
+    .edit-button:hover {
+      color: var(--primary-dark);
+    }
+
+    /* 삭제는 되돌릴 수 없으니 마우스를 올렸을 때 경고 색으로 바뀌게 한다. */
+    .delete-button:hover {
+      color: var(--danger);
     }
   </style>
 </head>
@@ -144,8 +294,23 @@
     <p>냉장고에 있는 재료를 기록하고 유통기한을 챙겨요.</p>
   </header>
 
+  <section class="summary-card">
+    <div class="summary-cell">
+      <div class="summary-number" id="total-count">0</div>
+      <div class="summary-label">전체</div>
+    </div>
+    <div class="summary-cell">
+      <div class="summary-number" id="soon-count">0</div>
+      <div class="summary-label">임박</div>
+    </div>
+    <div class="summary-cell">
+      <div class="summary-number" id="expired-count">0</div>
+      <div class="summary-label">지남</div>
+    </div>
+  </section>
+
   <section class="add-card">
-    <h2>재료 추가</h2>
+    <h2>🛒 재료 추가</h2>
     <form id="add-form">
       <label>
         재료 이름
@@ -182,7 +347,7 @@
   </section>
 
   <section>
-    <h2>내 냉장고</h2>
+    <h2>🧺 내 냉장고</h2>
     <div id="item-list"></div>
   </section>
 
@@ -258,6 +423,21 @@
         return "D-" + daysLeft;
       }
       return expiryDateString;
+    }
+
+    function getExpiryStatus(expiryDateString) {
+      // 배지 색을 고르기 위한 상태값. 기준은 formatExpiryLabel과 같다.
+      if (!expiryDateString) {
+        return "normal";
+      }
+      const daysLeft = getDaysUntilExpiry(expiryDateString);
+      if (daysLeft < 0) {
+        return "expired";
+      }
+      if (daysLeft <= SOON_EXPIRY_DAYS) {
+        return "soon";
+      }
+      return "normal";
     }
 
     // ---------- 정렬 ----------
@@ -368,7 +548,15 @@
       const listElement = document.getElementById("item-list");
       listElement.innerHTML = "";
 
+      // 추가/수정/삭제가 모두 이 함수로 화면을 다시 그리므로, 요약 숫자도 여기서 함께 갱신한다.
+      renderSummary();
+
       if (items.length === 0) {
+        const emptyIcon = document.createElement("div");
+        emptyIcon.className = "empty-icon";
+        emptyIcon.textContent = "🧊";
+        listElement.appendChild(emptyIcon);
+
         const emptyMessage = document.createElement("p");
         emptyMessage.textContent = "냉장고가 비어 있어요. 재료를 추가해 보세요.";
         listElement.appendChild(emptyMessage);
@@ -380,42 +568,98 @@
       });
     }
 
+    function renderSummary() {
+      // 임박/지남 기준은 배지 색과 같은 getExpiryStatus를 써서 숫자와 배지가 항상 일치하게 한다.
+      const soonItems = items.filter(function (item) {
+        return getExpiryStatus(item.expiryDate) === "soon";
+      });
+      const expiredItems = items.filter(function (item) {
+        return getExpiryStatus(item.expiryDate) === "expired";
+      });
+      document.getElementById("total-count").textContent = items.length;
+      document.getElementById("soon-count").textContent = soonItems.length;
+      document.getElementById("expired-count").textContent = expiredItems.length;
+    }
+
     function createItemCard(item) {
       const card = document.createElement("div");
       card.className = "item-card";
-
-      const nameElement = document.createElement("p");
-      nameElement.className = "item-name";
-      // 사용자가 입력한 글자는 innerHTML이 아닌 textContent로 넣어야 HTML로 해석되지 않아 안전하다.
-      nameElement.textContent = item.name;
-      card.appendChild(nameElement);
+      // CSS가 이 값을 보고 왼쪽 색 띠의 색을 정한다.
+      card.dataset.location = item.storage;
 
       if (item.id === editingItemId) {
+        card.appendChild(createNameElement(item));
         card.appendChild(createEditSection(item));
       } else {
-        card.appendChild(createViewSection(item));
+        card.appendChild(createTopRow(item));
+        card.appendChild(createBottomRow(item));
       }
       return card;
     }
 
-    function createViewSection(item) {
-      const section = document.createElement("div");
+    function createNameElement(item) {
+      const nameElement = document.createElement("p");
+      nameElement.className = "item-name";
+      // 사용자가 입력한 글자는 innerHTML이 아닌 textContent로 넣어야 HTML로 해석되지 않아 안전하다.
+      nameElement.textContent = item.name;
+      return nameElement;
+    }
 
-      const detail = document.createElement("p");
-      detail.className = "item-detail";
-      detail.textContent =
-        item.quantity + item.unit + " · " + item.storage + " · " + formatExpiryLabel(item.expiryDate);
-      section.appendChild(detail);
+    // 윗줄: 왼쪽에 재료 이름, 오른쪽 끝에 수량과 단위
+    function createTopRow(item) {
+      const row = document.createElement("div");
+      row.className = "card-row";
 
+      const quantityElement = document.createElement("span");
+      quantityElement.className = "item-quantity";
+      quantityElement.textContent = item.quantity + item.unit;
+
+      row.appendChild(createNameElement(item));
+      row.appendChild(quantityElement);
+      return row;
+    }
+
+    // 아랫줄: 왼쪽에 보관 위치 칩과 유통기한 배지, 오른쪽 끝에 수정/삭제 버튼
+    function createBottomRow(item) {
+      const row = document.createElement("div");
+      row.className = "card-row";
+
+      const infoGroup = document.createElement("div");
+      infoGroup.className = "card-group";
+      infoGroup.appendChild(createLocationChip(item.storage));
+      infoGroup.appendChild(createExpiryBadge(item.expiryDate));
+
+      const buttonGroup = document.createElement("div");
+      buttonGroup.className = "card-group";
       const editButton = createButton("수정", function () {
         startEditing(item.id);
       });
+      editButton.className = "text-button edit-button";
       const deleteButton = createButton("삭제", function () {
         deleteItem(item.id, item.name);
       });
-      section.appendChild(editButton);
-      section.appendChild(deleteButton);
-      return section;
+      deleteButton.className = "text-button delete-button";
+      buttonGroup.appendChild(editButton);
+      buttonGroup.appendChild(deleteButton);
+
+      row.appendChild(infoGroup);
+      row.appendChild(buttonGroup);
+      return row;
+    }
+
+    function createLocationChip(storage) {
+      const chip = document.createElement("span");
+      chip.className = "location-chip";
+      chip.textContent = storage;
+      return chip;
+    }
+
+    function createExpiryBadge(expiryDateString) {
+      const badge = document.createElement("span");
+      // 상태 이름을 class로 붙여, 색은 CSS에서 정하게 한다.
+      badge.className = "expiry-badge " + getExpiryStatus(expiryDateString);
+      badge.textContent = formatExpiryLabel(expiryDateString);
+      return badge;
     }
 
     function createEditSection(item) {
