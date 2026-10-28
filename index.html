@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오늘 뭐 먹지?</title>
+  <style>
+    /* 1차는 기능 우선이라, 화면을 알아볼 수 있을 정도의 최소한의 스타일만 둔다. */
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    #add-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: end;
+    }
+
+    #add-form label {
+      display: flex;
+      flex-direction: column;
+      font-size: 14px;
+    }
+
+    #form-message {
+      color: #c00;
+      min-height: 1.2em;
+    }
+
+    .item-card {
+      border: 1px solid #999;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+
+    .item-name {
+      font-weight: bold;
+      margin: 0 0 4px;
+    }
+
+    .item-detail {
+      margin: 0 0 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>오늘 뭐 먹지?</h1>
+    <p>냉장고에 있는 재료를 기록하고 유통기한을 챙겨요.</p>
+  </header>
+
+  <section>
+    <h2>재료 추가</h2>
+    <form id="add-form">
+      <label>
+        재료 이름
+        <input type="text" id="name-input">
+      </label>
+      <label>
+        수량
+        <input type="number" id="quantity-input" min="0" step="any">
+      </label>
+      <label>
+        단위
+        <select id="unit-select">
+          <option value="개">개</option>
+          <option value="g">g</option>
+          <option value="ml">ml</option>
+          <option value="봉">봉</option>
+        </select>
+      </label>
+      <label>
+        보관 위치
+        <select id="storage-select">
+          <option value="냉장">냉장</option>
+          <option value="냉동">냉동</option>
+          <option value="실온">실온</option>
+        </select>
+      </label>
+      <label>
+        유통기한
+        <input type="date" id="expiry-input">
+      </label>
+      <button type="submit">추가</button>
+    </form>
+    <p id="form-message"></p>
+  </section>
+
+  <section>
+    <h2>내 냉장고</h2>
+    <div id="item-list"></div>
+  </section>
+
+  <script>
+    // localStorage에 저장할 때 쓰는 key. 나중에 집밥일지 등 다른 데이터와 섞이지 않도록 앞에 "todaymeal."을 붙인다.
+    const STORAGE_KEY = "todaymeal.items";
+
+    // 유통기한이 이 날짜 수 이내로 남으면 "D-n"으로 표시한다.
+    const SOON_EXPIRY_DAYS = 3;
+
+    // 앱이 다루는 재료 목록. 화면은 항상 이 배열을 기준으로 다시 그린다.
+    let items = loadItems();
+
+    // 지금 수정 중인 재료의 id. 한 번에 한 카드만 수정할 수 있게 하나만 기억한다.
+    let editingItemId = null;
+
+    // ---------- 저장 / 불러오기 ----------
+
+    function loadItems() {
+      const savedText = localStorage.getItem(STORAGE_KEY);
+      if (savedText === null) {
+        return [];
+      }
+      // 저장된 값이 깨져 있어도 앱 전체가 멈추지 않도록 빈 목록으로 시작한다.
+      try {
+        const parsedItems = JSON.parse(savedText);
+        return Array.isArray(parsedItems) ? parsedItems : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function saveItems() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
+
+    function createItemId() {
+      // 같은 밀리초에 두 개가 추가돼도 겹치지 않도록 무작위 문자열을 덧붙인다.
+      return Date.now().toString() + Math.random().toString(16).slice(2);
+    }
+
+    // ---------- 날짜 계산 ----------
+
+    function parseDateString(dateString) {
+      // new Date("2026-10-28")은 UTC 기준으로 해석되어 한국 시간에서 날짜가 어긋날 수 있다.
+      // 그래서 연/월/일을 직접 나눠 로컬 날짜로 만든다.
+      const [year, month, day] = dateString.split("-").map(Number);
+      return new Date(year, month - 1, day);
+    }
+
+    function getToday() {
+      // 시각을 0시로 맞춰야 "오늘"과 "유통기한 날짜"를 일 단위로 정확히 비교할 수 있다.
+      const now = new Date();
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+
+    function getDaysUntilExpiry(expiryDateString) {
+      const millisecondsPerDay = 24 * 60 * 60 * 1000;
+      const difference = parseDateString(expiryDateString) - getToday();
+      // 서머타임 등으로 생기는 몇 시간 차이를 반올림으로 흡수한다.
+      return Math.round(difference / millisecondsPerDay);
+    }
+
+    function formatExpiryLabel(expiryDateString) {
+      if (!expiryDateString) {
+        return "유통기한 없음";
+      }
+      const daysLeft = getDaysUntilExpiry(expiryDateString);
+      if (daysLeft < 0) {
+        return "기한 지남";
+      }
+      if (daysLeft <= SOON_EXPIRY_DAYS) {
+        return "D-" + daysLeft;
+      }
+      return expiryDateString;
+    }
+
+    // ---------- 정렬 ----------
+
+    function sortItemsByExpiry(itemList) {
+      // 원본 배열 순서를 건드리지 않도록 복사본을 정렬한다.
+      return [...itemList].sort(function (firstItem, secondItem) {
+        const firstHasExpiry = Boolean(firstItem.expiryDate);
+        const secondHasExpiry = Boolean(secondItem.expiryDate);
+
+        // 유통기한이 없는 재료는 맨 뒤로 보낸다.
+        if (!firstHasExpiry && !secondHasExpiry) return 0;
+        if (!firstHasExpiry) return 1;
+        if (!secondHasExpiry) return -1;
+
+        // "YYYY-MM-DD" 형식은 글자 순서가 곧 날짜 순서라서 문자열 비교로 충분하다.
+        return firstItem.expiryDate.localeCompare(secondItem.expiryDate);
+      });
+    }
+
+    // ---------- 추가 ----------
+
+    function handleAddSubmit(event) {
+      // 폼 제출 시 페이지가 새로고침되는 기본 동작을 막는다.
+      event.preventDefault();
+
+      const name = document.getElementById("name-input").value.trim();
+      const quantityText = document.getElementById("quantity-input").value;
+
+      if (name === "" || quantityText === "") {
+        showFormMessage("재료 이름과 수량을 입력해 주세요");
+        return;
+      }
+
+      const newItem = {
+        id: createItemId(),
+        name: name,
+        quantity: Number(quantityText),
+        unit: document.getElementById("unit-select").value,
+        storage: document.getElementById("storage-select").value,
+        expiryDate: document.getElementById("expiry-input").value
+      };
+
+      items.push(newItem);
+      saveItems();
+      clearAddForm();
+      showFormMessage("");
+      renderItemList();
+    }
+
+    function showFormMessage(message) {
+      document.getElementById("form-message").textContent = message;
+    }
+
+    function clearAddForm() {
+      // 단위와 보관 위치는 연달아 비슷한 재료를 넣을 때 편하도록 그대로 둔다.
+      document.getElementById("name-input").value = "";
+      document.getElementById("quantity-input").value = "";
+      document.getElementById("expiry-input").value = "";
+      document.getElementById("name-input").focus();
+    }
+
+    // ---------- 수정 ----------
+
+    function startEditing(itemId) {
+      editingItemId = itemId;
+      renderItemList();
+    }
+
+    function cancelEditing() {
+      editingItemId = null;
+      renderItemList();
+    }
+
+    function saveEditedItem(itemId, quantityText, expiryDate) {
+      if (quantityText === "") {
+        alert("수량을 입력해 주세요");
+        return;
+      }
+      const targetItem = items.find(function (item) {
+        return item.id === itemId;
+      });
+      targetItem.quantity = Number(quantityText);
+      targetItem.expiryDate = expiryDate;
+      saveItems();
+      editingItemId = null;
+      renderItemList();
+    }
+
+    // ---------- 삭제 ----------
+
+    function deleteItem(itemId, itemName) {
+      // 실수로 누르는 경우를 막기 위해 한 번 더 확인한다.
+      const isConfirmed = confirm("'" + itemName + "'을(를) 삭제할까요?");
+      if (!isConfirmed) {
+        return;
+      }
+      items = items.filter(function (item) {
+        return item.id !== itemId;
+      });
+      saveItems();
+      renderItemList();
+    }
+
+    // ---------- 화면 그리기 ----------
+
+    function renderItemList() {
+      const listElement = document.getElementById("item-list");
+      listElement.innerHTML = "";
+
+      if (items.length === 0) {
+        const emptyMessage = document.createElement("p");
+        emptyMessage.textContent = "냉장고가 비어 있어요. 재료를 추가해 보세요.";
+        listElement.appendChild(emptyMessage);
+        return;
+      }
+
+      sortItemsByExpiry(items).forEach(function (item) {
+        listElement.appendChild(createItemCard(item));
+      });
+    }
+
+    function createItemCard(item) {
+      const card = document.createElement("div");
+      card.className = "item-card";
+
+      const nameElement = document.createElement("p");
+      nameElement.className = "item-name";
+      // 사용자가 입력한 글자는 innerHTML이 아닌 textContent로 넣어야 HTML로 해석되지 않아 안전하다.
+      nameElement.textContent = item.name;
+      card.appendChild(nameElement);
+
+      if (item.id === editingItemId) {
+        card.appendChild(createEditSection(item));
+      } else {
+        card.appendChild(createViewSection(item));
+      }
+      return card;
+    }
+
+    function createViewSection(item) {
+      const section = document.createElement("div");
+
+      const detail = document.createElement("p");
+      detail.className = "item-detail";
+      detail.textContent =
+        item.quantity + item.unit + " · " + item.storage + " · " + formatExpiryLabel(item.expiryDate);
+      section.appendChild(detail);
+
+      const editButton = createButton("수정", function () {
+        startEditing(item.id);
+      });
+      const deleteButton = createButton("삭제", function () {
+        deleteItem(item.id, item.name);
+      });
+      section.appendChild(editButton);
+      section.appendChild(deleteButton);
+      return section;
+    }
+
+    function createEditSection(item) {
+      const section = document.createElement("div");
+
+      const quantityInput = document.createElement("input");
+      quantityInput.type = "number";
+      quantityInput.min = "0";
+      quantityInput.step = "any";
+      quantityInput.value = item.quantity;
+
+      const expiryInput = document.createElement("input");
+      expiryInput.type = "date";
+      expiryInput.value = item.expiryDate;
+
+      section.appendChild(createLabeledField("수량 (" + item.unit + ")", quantityInput));
+      section.appendChild(createLabeledField("유통기한", expiryInput));
+
+      const saveButton = createButton("저장", function () {
+        saveEditedItem(item.id, quantityInput.value, expiryInput.value);
+      });
+      const cancelButton = createButton("취소", cancelEditing);
+      section.appendChild(saveButton);
+      section.appendChild(cancelButton);
+      return section;
+    }
+
+    function createLabeledField(labelText, inputElement) {
+      const label = document.createElement("label");
+      label.textContent = labelText + " ";
+      label.appendChild(inputElement);
+      // 입력칸이 한 줄씩 보이도록 label을 블록 요소처럼 감싼다.
+      const wrapper = document.createElement("p");
+      wrapper.appendChild(label);
+      return wrapper;
+    }
+
+    function createButton(buttonText, onClick) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = buttonText;
+      button.addEventListener("click", onClick);
+      return button;
+    }
+
+    // ---------- 시작 ----------
+
+    document.getElementById("add-form").addEventListener("submit", handleAddSubmit);
+    renderItemList();
+  </script>
+</body>
+</html>
