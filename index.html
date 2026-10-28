@@ -5,12 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>오늘 뭐 먹지?</title>
   <style>
-    /* 1차는 기능 우선이라, 화면을 알아볼 수 있을 정도의 최소한의 스타일만 둔다. */
+    /* 색을 한곳에 모아 두면, 나중에 톤을 바꿀 때 여기만 고치면 된다. */
+    :root {
+      --bg: #FDF6F0;           /* 전체 배경 */
+      --card: #FFFFFF;         /* 카드 배경 */
+      --text: #4A4036;         /* 기본 글자 */
+      --text-soft: #8A7E72;    /* 보조 글자 */
+      --primary: #F4A896;      /* 주 버튼 배경 */
+      --primary-dark: #C9705A; /* 강조 글자와 테두리 */
+      --line: #EFE4DA;         /* 구분선 */
+      --chill: #A8DADC;        /* 냉장 */
+      --freeze: #BDE0FE;       /* 냉동 */
+      --room: #FFE5A5;         /* 실온 */
+      --warn: #FFB4A2;         /* 유통기한 임박 */
+      --danger: #E5989B;       /* 기한 지남 */
+    }
+
+    /* 웹폰트를 불러오지 않기로 했으므로, 설치된 폰트 중 앞에서부터 있는 것을 쓴다. */
     body {
-      font-family: sans-serif;
-      max-width: 600px;
+      font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      max-width: 640px;
       margin: 0 auto;
       padding: 16px;
+    }
+
+    /* 앱 이름이 가장 먼저 눈에 들어오도록 크고 굵게 둔다. */
+    header h1 {
+      font-size: 32px;
+      font-weight: 800;
+      margin: 8px 0 4px;
+    }
+
+    /* 설명은 제목보다 덜 눈에 띄도록 보조 글자색을 쓴다. */
+    header p {
+      color: var(--text-soft);
+      margin: 0 0 16px;
     }
 
     #add-form {
